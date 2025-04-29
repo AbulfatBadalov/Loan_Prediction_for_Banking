@@ -10,14 +10,14 @@ st.title("📊 Kişisel Kredi Başvuru Tahmin Uygulaması")
 data = pd.read_excel("Bank_Personal_Loan_Modelling.xlsx", sheet_name="Data")
 
 # Girdi / Çıktı ayrımı
-X = data.drop('Personal Loan', axis=1)
+X = data.drop(['Personal Loan', 'ID', 'ZIP Code'], axis=1)
 y = data['Personal Loan']
 
 # Eğitim / Test bölmesi
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # Modeli eğit
-model = DecisionTreeClassifier()
+model = DecisionTreeClassifier(max_depth=5, random_state=42)
 model.fit(X_train, y_train)
 
 # Kullanıcıdan veriler al
@@ -34,13 +34,10 @@ securities = st.sidebar.selectbox("Menkul Hesabı Var mı?", [0, 1])
 cd = st.sidebar.selectbox("CD Hesabı Var mı?", [0, 1])
 online = st.sidebar.selectbox("Online Bankacılık Kullanıyor mu?", [0, 1])
 creditcard = st.sidebar.selectbox("Kredi Kartı Var mı?", [0, 1])
-# Sabitlenen (örnek) bilgiler
-zipcode = 91107
-customer_id = 99999
 
-# Tahmin için giriş verisi (tüm sütunlara karşılık gelen sırayla)
+# Tahmin için giriş verisi
 input_data = pd.DataFrame([[age, experience, income, family, ccavg, education, mortgage,
-                            securities, cd, online, creditcard, zipcode, customer_id]],
+                            securities, cd, online, creditcard]],
                           columns=X.columns)
 
 # Tahmin

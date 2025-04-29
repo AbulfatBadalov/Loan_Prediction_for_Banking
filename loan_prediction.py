@@ -9,6 +9,16 @@ from sklearn import tree
 # Excel dosyasını oku, 'Data' adlı sayfayı kullan
 data = pd.read_excel('Bank_Personal_Loan_Modelling.xlsx', sheet_name='Data')
 
+data.shape
+data.value_counts()
+#Eksik veriler
+data.isnull().sum()
+# 2. Gereksiz sütunları at (ID ve ZIP Code)
+data.drop(columns=['ID','ZIP Code'],inplace=True)
+#Eksik verileri yeniden kontrol
+data.isnull().sum()
+#Kategorik verileri one-hot-encoding ile dondurme
+data=pd.get_dummies(data,columns=['Education','Family'],drop_first=True)
 # İlk 5 satırı görüntüle (kontrol amaçlı)
 data.head(5)
 
