@@ -87,3 +87,11 @@ for train_ratio, test_ratio in split_ratios:
     print(f"Training Accuracy: {train_accuracy}")
     print(f"Testing Accuracy: {test_accuracy}")
     print("\n")
+    import pickle
+
+# Modeli kaydet
+with open("model.pkl", "wb") as file:
+    pickle.dump(dt_model, file)
+# Save model_columns
+with open("model_columns.pkl", "wb") as file:
+    pickle.dump(model_columns, file)

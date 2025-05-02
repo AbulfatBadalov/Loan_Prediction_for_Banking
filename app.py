@@ -1,51 +1,65 @@
 import streamlit as st
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
+import pickle
+import numpy as np
 
-# Başlık
-st.title("📊 Kişisel Kredi Başvuru Tahmin Uygulaması")
+# Modeli yükle
+with open('model.pkl','rb') as file:
+  dt_model=pickle.load(file)
 
-# Veriyi yükle
-data = pd.read_excel("Bank_Personal_Loan_Modelling.xlsx", sheet_name="Data")
+# Load model columns
+with open("model_columns.pkl", "rb") as f:
+    model_columns = pickle.load(f)
 
-# Girdi / Çıktı ayrımı
-X = data.drop(['Personal Loan', 'ID', 'ZIP Code'], axis=1)
-y = data['Personal Loan']
 
-# Eğitim / Test bölmesi
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Modeli eğit
-model = DecisionTreeClassifier(max_depth=5, random_state=42)
-model.fit(X_train, y_train)
+st.title("Kişisel Kredi Başvuru Tahmini")
 
-# Kullanıcıdan veriler al
-st.sidebar.header("Müşteri Bilgileri")
+st.markdown("Aşağıdaki bilgileri doldurarak kredi başvurusunun onaylanıp onaylanmayacağını tahmin edebilirsiniz.")
 
-age = st.sidebar.slider("Yaş", 18, 75, 35)
-experience = st.sidebar.slider("İş Tecrübesi (yıl)", -5, 40, 5)
-income = st.sidebar.slider("Gelir (bin $)", 10, 200, 50)
-family = st.sidebar.selectbox("Aile Büyüklüğü", [1, 2, 3, 4])
-ccavg = st.sidebar.slider("Aylık Kredi Kartı Harcaması (bin $)", 0.0, 10.0, 1.0)
-education = st.sidebar.selectbox("Eğitim Seviyesi", [1, 2, 3])
-mortgage = st.sidebar.slider("Mortgage (bin $)", 0, 500, 0)
-securities = st.sidebar.selectbox("Menkul Hesabı Var mı?", [0, 1])
-cd = st.sidebar.selectbox("CD Hesabı Var mı?", [0, 1])
-online = st.sidebar.selectbox("Online Bankacılık Kullanıyor mu?", [0, 1])
-creditcard = st.sidebar.selectbox("Kredi Kartı Var mı?", [0, 1])
+# Form yapısı
+with st.form("loan_form"):
+    age = st.slider("Yaş", 18, 100, 30)
+    experience = st.number_input("İş Deneyimi (Yıl)", -10, 50, 5)
+    income = st.number_input("Yıllık Gelir (bin $)", 0, 500, 50)
+    ccavg = st.number_input("Kredi Kartı Harcaması (bin $)", 0.0, 20.0, 1.5)
+    mortgage = st.number_input("Mortgage Miktarı", 0, 1000, 0)
+    
+    securities_account = st.selectbox("Men. Kıymet Hesabı Var mı?", ['Hayır', 'Evet'])
+    cd_account = st.selectbox("Vadeli Mevduat Hesabı Var mı?", ['Hayır', 'Evet'])
+    online = st.selectbox("Online Bankacılık Kullanıyor mu?", ['Hayır', 'Evet'])
+    credit_card = st.selectbox("Kredi Kartı Var mı?", ['Hayır', 'Evet'])
 
-# Tahmin için giriş verisi
-input_data = pd.DataFrame([[age, experience, income, family, ccavg, education, mortgage,
-                            securities, cd, online, creditcard]],
-                          columns=X.columns)
+    education = st.selectbox("Eğitim Durumu", ['Undergrad', 'Graduate', 'Advanced/Professional'])
+    family = st.selectbox("Aile Büyüklüğü", [1, 2, 3, 4])
 
-# Tahmin
-prediction = model.predict(input_data)[0]
+    # Submit butonu
+    submitted = st.form_submit_button("Submit")
 
-# Sonucu göster
-st.subheader("🧠 Tahmin Sonucu")
-if prediction == 1:
-    st.success("✅ Bu müşteri büyük ihtimalle kredi alacak.")
-else:
-    st.warning("⚠️ Bu müşteri kredi almayabilir.")
+if submitted:
+    # Giriş verilerini hazırla
+    input_dict = {
+        'Age': age,
+        'Experience': experience,
+        'Income': income,
+        'CCAvg': ccavg,
+        'Mortgage': mortgage,
+        'Securities Account': 1 if securities_account == 'Evet' else 0,
+        'CD Account': 1 if cd_account == 'Evet' else 0,
+        'Online': 1 if online == 'Evet' else 0,
+        'CreditCard': 1 if credit_card == 'Evet' else 0,
+        'Education_2': 1 if education == 'Graduate' else 0,
+        'Education_3': 1 if education == 'Advanced/Professional' else 0,
+        'Family_2': 1 if family == 2 else 0,
+        'Family_3': 1 if family == 3 else 0,
+        'Family_4': 1 if family == 4 else 0
+    }
+
+    # Eksik kolonları 0 ile doldur
+    input_data = [input_dict.get(col, 0) for col in model_columns]
+
+    # Tahmin
+    prediction = dt_model.predict([input_data])[0]
+    if prediction == 1:
+        st.success("Tahmin: ✅ Kredi başvurusu ONAYLANIR.")
+    else:
+        st.warning("Tahmin: ❌ Kredi başvurusu REDDEDİLİR.")
